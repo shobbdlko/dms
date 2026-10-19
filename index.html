@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duty Management System - Cop Suvidha</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <!-- Modern Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* 🖨️ PRINT / PDF EXPORT SPECIFIC STYLES */
+        #printHeader { display: none; }
+
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            /* स्क्रीन के अवांछित भाग और नेविगेशन बटन छुपाएं */
+            .no-print, header, input, button.no-print, #detailsModal, #assignModal, #editModal {
+                display: none !important;
+            }
+
+            /* यदि प्रिव्यू विंडो खुली है तो उसे प्रिंट में पूरा और साफ दिखाएं */
+            #previewModal {
+                position: static !important;
+                display: block !important;
+                background: none !important;
+                backdrop-filter: none !important;
+                padding: 0 !important;
+            }
+            #previewModal > div {
+                max-width: 100% !important;
+                max-height: none !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: none !important;
+                padding: 0 !important;
+            }
+            
+            /* प्रिव्यू मोडल के टॉप और बॉटम के एक्शन बटन्स छुपाएं */
+            #previewModal .shrink-0 {
+                display: none !important;
+            }
+
+            #printHeader {
+                display: block !important;
+            }
+            
+            /* प्रिंट में नाम और अन्य टेक्स्ट दिखाने के लिए सटीक नियम */
+            .print-table td, .print-table th {
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .print-table td span, 
+            .print-table td div {
+                color: black !important;
+                background: none !important;
+                display: inline !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                font-weight: bold !important;
+            }
+
+            .print-section {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                margin-bottom: 20px !important;
+                border: 1px solid #cbd5e1 !important;
+                padding: 10px !important;
+                border-radius: 8px !important;
+            }
+            .print-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 5px !important;
+            }
+            .print-table th, .print-table td {
+                border: 1px solid #333 !important;
+                padding: 6px 8px !important;
+                font-size: 10pt !important;
+                text-align: left !important;
+            }
+            .print-table th {
+                background-color: #f1f5f9 !important;
+                font-weight: bold !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen py-8 px-4 transition-colors duration-300">
+
+    <!-- Glowing Background Decorative Effects -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10 no-print">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-500/25 dark:bg-blue-600/15 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-500/25 dark:bg-indigo-600/15 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- PRINT ONLY OFFICIAL POLICE HEADER -->
+    <div id="printHeader" class="text-center mb-6 pb-2 border-b-2 border-slate-900">
+        <div class="flex items-center justify-between mb-2 text-slate-900">
+            <div class="text-left">
+                <p class="text-[10pt] font-bold">थाना बी०बी०डी०, लखनऊ</p>
+                <p class="text-[9pt] text-slate-600">कमिश्नरेट लखनऊ, उत्तर प्रदेश</p>
+            </div>
+            <div class="text-center">
+                <h1 class="text-base font-extrabold tracking-wider uppercase">उत्तर प्रदेश पुलिस</h1>
+                <h2 class="text-xs font-bold uppercase tracking-wide text-slate-700">UP POLICE - DAILY DUTY ROSTER</h2>
+            </div>
+            <div class="text-right">
+                <p class="text-[9pt] font-medium">दिनांक: <span id="printDate" class="font-bold"></span></p>
+                <p class="text-[8pt] text-slate-600">समय: <span id="printTime" class="font-medium"></span></p>
+            </div>
+        </div>
+        <div class="my-2 border-t border-slate-300 pt-2">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-slate-900 bg-slate-100 py-1 rounded">
+                ड्यूटी प्वाइंट वार कर्मचारी आवंटन रिपोर्ट
+            </h3>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- Top Header Card -->
+        <header class="glass rounded-3xl p-5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
+            <div class="flex items-center gap-3.5 text-center sm:text-left">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-blue-500/30 shrink-0 mx-auto sm:mx-0">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+                        Duty Management System
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        <i class="fa-solid fa-building-shield text-blue-500 mr-1"></i> Police Roster & Shift Allocation Portal
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+                <!-- Preview Report Button -->
+                <button type="button" onclick="openPreviewModal()" class="no-print px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-eye"></i> Preview Report
+                </button>
+                <button type="button" onclick="openAssignModal()" class="no-print px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-blue-500/25 transition-all flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-plus"></i> Assign New Duty
+                </button>
+            </div>
+        </header>
+
+        <!-- QUICK METRICS DASHBOARD CARDS -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 no-print">
+            <div class="glass p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-users"></i></div>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Staff</span>
+                    <h3 id="statTotal" class="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100">0</h3>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-user-check"></i></div>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">On Duty Now</span>
+                    <h3 id="statActive" class="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100">0</h3>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-user-clock"></i></div>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">On Leave / Off</span>
+                    <h3 id="statLeave" class="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100">0</h3>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-user-shield"></i></div>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Reserve Staff</span>
+                    <h3 id="statReserve" class="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duty Roster Table Card -->
+        <main class="glass rounded-3xl p-6 shadow-xl space-y-4 no-print">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-blue-500"></i> Today's Duty Allocation Roster
+                </h2>
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search Name, Rank or PNO..." 
+                        class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase text-[10px] font-bold tracking-wider">
+                            <th class="py-3 px-3 text-center w-12">क्रम सं०</th>
+                            <th class="py-3 px-3">कर्मचारी का नाम</th>
+                            <th class="py-3 px-3">पद नाम (Rank)</th>
+                            <th class="py-3 px-3">PNO संख्या</th>
+                            <th class="py-3 px-3">मोबाइल नंबर</th>
+                            <th class="py-3 px-3">आवंटित ड्यूटी प्वाइंट</th>
+                            <th class="py-3 px-3">शिफ्ट समय</th>
+                            <th class="py-3 px-3">स्थिति (Status)</th>
+                            <th class="py-3 px-3 text-right">कार्रवाई (Actions)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dutyTableBody" class="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
+                        <tr id="loadingRow">
+                            <td colspan="9" class="text-center py-8 text-slate-400 font-semibold">
+                                <i class="fa-solid fa-circle-notch fa-spin text-xl text-blue-500 mb-2 block"></i>
+                                गूगल शीट से डेटा लोड हो रहा है, कृपया प्रतीक्षा करें...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- 🌟 REPORT PREVIEW MODAL (DUTY POINT WISE SECTIONS) 🌟 -->
+    <div id="previewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md hidden px-4 py-6 overflow-y-auto">
+        <div class="glass w-full max-w-4xl rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative border border-slate-700/50 max-h-[90vh] flex flex-col">
+            
+            <!-- Modal Top Actions Bar -->
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 shrink-0">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines text-emerald-500"></i> ड्यूटी प्वाइंट वार रिपोर्ट प्रिव्यू
+                    </h3>
+                    <p class="text-xs text-slate-500">थाना बी०बी०डी०, लखनऊ - कमिश्नरेट लखनऊ</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="printDutyReport()" class="no-print px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-print"></i> Print & Save PDF
+                    </button>
+                    <button onclick="closePreviewModal()" class="no-print text-slate-400 hover:text-rose-500 text-xl font-bold px-2">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content Body (Dynamic Sections by Duty Point) -->
+            <div id="previewContentBody" class="space-y-6 overflow-y-auto pr-2 flex-1">
+                <!-- Javascript will inject sections here -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end shrink-0">
+                <button onclick="closePreviewModal()" class="no-print px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Close Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. EMPLOYEE DETAILS POPUP MODAL -->
+    <div id="detailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md hidden px-4 no-print">
+        <div class="glass w-full max-w-md rounded-3xl p-6 shadow-2xl relative border border-slate-700/50 space-y-5">
+            <div class="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl font-bold shadow-md shadow-blue-500/30">
+                        <i class="fa-solid fa-id-card-clip"></i>
+                    </div>
+                    <div>
+                        <h3 id="modalName" class="text-lg font-bold text-slate-800 dark:text-slate-100">---</h3>
+                        <span id="modalRank" class="text-xs text-blue-600 dark:text-blue-400 font-semibold">---</span>
+                    </div>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-rose-500 text-xl font-bold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-3.5 text-xs">
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
+                    <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2"><i class="fa-solid fa-hashtag text-blue-500"></i> PNO Number</span>
+                    <span id="modalPno" class="font-bold text-slate-800 dark:text-slate-100">---</span>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5"><i class="fa-solid fa-location-dot"></i> Current Assigned Duty Point</span>
+                    <p id="modalDutyPoint" class="font-bold text-sm text-slate-800 dark:text-slate-100 leading-snug">---</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 rounded-2xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold block mb-1">Shift Schedule</span>
+                        <span id="modalShift" class="font-bold text-slate-700 dark:text-slate-200 block">---</span>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold block mb-1">Duty Status</span>
+                        <span id="modalStatusBadge" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold">---</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
+                    <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2"><i class="fa-solid fa-phone text-emerald-500"></i> Contact Mobile</span>
+                    <a id="modalPhone" href="#" class="font-bold text-blue-600 dark:text-blue-400 hover:underline">---</a>
+                </div>
+            </div>
+
+            <div class="pt-2 flex gap-3">
+                <a id="modalCallBtn" href="#" class="w-1/2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-phone"></i> Call Staff</a>
+                <button onclick="closeDetailsModal()" class="w-1/2 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-xs font-bold text-slate-700 dark:text-slate-200">Close Window</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ASSIGN NEW DUTY MODAL -->
+    <div id="assignModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm hidden px-4 no-print">
+        <div class="glass w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative border border-slate-700/50">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><i class="fa-solid fa-user-plus text-blue-500"></i> Assign New Duty</h3>
+                <button onclick="closeAssignModal()" class="text-slate-400 hover:text-rose-500 text-lg font-bold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="newDutyForm" onsubmit="addDuty(event)" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Employee Name *</label>
+                        <input type="text" id="empName" required placeholder="पूरा नाम दर्ज करें" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Rank / पद नाम *</label>
+                        <input type="text" id="empRank" required placeholder="उदा0- उप निरीक्षक (SI)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">PNO Number *</label>
+                        <input type="text" id="empPno" required placeholder="PNO संख्या" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Mobile Number *</label>
+                        <input type="text" id="empMobile" required placeholder="10-अंकों का मोबाइल नं०" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Assigned Duty Point *</label>
+                    <input type="text" id="empPost" required placeholder="ड्यूटी का स्थान (जैसे- Gate 1 / Malkhana)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Shift Timing *</label>
+                        <select id="empShift" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="08:00 AM - 04:00 PM (Morning)">08:00 AM - 04:00 PM (Morning)</option>
+                            <option value="04:00 PM - 12:00 AM (Evening)">04:00 PM - 12:00 AM (Evening)</option>
+                            <option value="12:00 AM - 08:00 AM (Night)">12:00 AM - 08:00 AM (Night)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Status *</label>
+                        <select id="empStatus" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Active">Active</option>
+                            <option value="Upcoming">Upcoming</option>
+                            <option value="Reserve">Reserve</option>
+                            <option value="Off Duty">Off Duty / Leave</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeAssignModal()" class="w-1/2 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-xs font-bold">Cancel</button>
+                    <button type="submit" id="saveBtn" class="w-1/2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white text-xs font-bold">Save Duty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. EDIT DUTY MODAL -->
+    <div id="editModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm hidden px-4 no-print">
+        <div class="glass w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative border border-slate-700/50">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-blue-500"></i> Edit Duty & Employee Details</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-rose-500 text-lg font-bold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="editDutyForm" onsubmit="updateDuty(event)" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Employee Name *</label>
+                        <input type="text" id="editName" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Rank / पद नाम *</label>
+                        <input type="text" id="editRank" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">PNO Number *</label>
+                        <input type="text" id="editPno" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-800/70 border border-slate-300 dark:border-slate-800 text-xs cursor-not-allowed text-slate-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Mobile Number *</label>
+                        <input type="text" id="editMobile" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Assigned Duty Point *</label>
+                    <input type="text" id="editPost" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Shift Timing *</label>
+                        <select id="editShift" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="08:00 AM - 04:00 PM (Morning)">08:00 AM - 04:00 PM (Morning)</option>
+                            <option value="04:00 PM - 12:00 AM (Evening)">04:00 PM - 12:00 AM (Evening)</option>
+                            <option value="12:00 AM - 08:00 AM (Night)">12:00 AM - 08:00 AM (Night)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Status *</label>
+                        <select id="editStatus" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Active">Active</option>
+                            <option value="Upcoming">Upcoming</option>
+                            <option value="Reserve">Reserve</option>
+                            <option value="Off Duty">Off Duty / Leave</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="w-1/2 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-xs font-bold">Cancel</button>
+                    <button type="submit" id="updateBtn" class="w-1/2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white text-xs font-bold">Update Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Section -->
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBkem5uy4FyDhyB5QZKL0jYO_74YEHK9TIYLy_dOIQasWKWNQ5l0T0JCKt5CHIDo3FOg/exec';
+        let currentEditRow = null;
+        let globalDutyData = []; // ग्लोबल डेटा स्टोर करने के लिए
+
+        window.onload = function() {
+            fetchDataFromSheet();
+        };
+
+        function fetchDataFromSheet() {
+            fetch(SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+                globalDutyData = data; // डेटा सेव करें
+                const tbody = document.getElementById('dutyTableBody');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-slate-400 font-semibold">कोई रिकॉर्ड उपलब्ध नहीं है।</td></tr>';
+                    updateStats();
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    renderRow(item, index + 1);
+                });
+                updateStats();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('dutyTableBody').innerHTML = '<tr><td colspan="9" class="text-center py-6 text-rose-500 font-semibold">गूगल शीट से डेटा लोड करने में त्रुटि हुई।</td></tr>';
+            });
+        }
+
+        function renderRow(item, serialNo) {
+            let badgeClass = '';
+            if(item.status === 'Active') badgeClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+            else if(item.status === 'Upcoming') badgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+            else if(item.status === 'Reserve') badgeClass = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20';
+            else badgeClass = 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20';
+
+            const tbody = document.getElementById('dutyTableBody');
+            const newRow = document.createElement('tr');
+            newRow.className = 'hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors';
+            newRow.setAttribute('data-status', item.status);
+
+            newRow.innerHTML = `
+                <td class="py-3.5 px-3 text-center font-bold text-slate-500">${serialNo}</td>
+                <td class="py-3.5 px-3 font-bold text-slate-800 dark:text-slate-100">
+                    <button onclick="showDetails('${item.name}', '${item.rank}', '${item.pno}', '${item.post}', '${item.shift}', '${item.status}', '${item.mobile}')" 
+                        class="text-blue-600 dark:text-blue-400 hover:underline text-left">
+                        <span class="name-text">${item.name}</span>
+                    </button>
+                </td>
+                <td class="py-3.5 px-3 text-indigo-600 dark:text-indigo-400 font-semibold rank-text">${item.rank}</td>
+                <td class="py-3.5 px-3 text-slate-500 dark:text-slate-400 pno-text">${item.pno}</td>
+                <td class="py-3.5 px-3 text-slate-500 dark:text-slate-400 mobile-text">${item.mobile}</td>
+                <td class="py-3.5 px-3 text-slate-700 dark:text-slate-200 post-text">${item.post}</td>
+                <td class="py-3.5 px-3 text-slate-500 dark:text-slate-400 shift-text">${item.shift}</td>
+                <td class="py-3.5 px-3"><span class="print-badge status-badge px-2.5 py-1 rounded-full text-[10px] font-bold ${badgeClass}">${item.status}</span></td>
+                <td class="py-3.5 px-3 text-right space-x-2 no-print">
+                    <button onclick="openEditModal(this)" class="text-blue-500 hover:text-blue-700" title="Edit Duty"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button onclick="deleteRow(this)" class="text-rose-500 hover:text-rose-700" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+            `;
+
+            tbody.appendChild(newRow);
+        }
+
+        // 🌟 OPEN PREVIEW MODAL (DUTY POINT WISE GROUPING) 🌟
+        function openPreviewModal() {
+            const container = document.getElementById('previewContentBody');
+            container.innerHTML = '';
+
+            if (globalDutyData.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-6">कोई डेटा उपलब्ध नहीं है।</p>';
+                document.getElementById('previewModal').classList.remove('hidden');
+                return;
+            }
+
+            // कर्मचारियों को ड्यूटी प्वाइंट के हिसाब से ग्रुप करें
+            const groupedByPoint = {};
+            globalDutyData.forEach(item => {
+                const point = item.post ? item.post.trim() : 'अन्य ड्यूटी पॉइंट';
+                if (!groupedByPoint[point]) {
+                    groupedByPoint[point] = [];
+                }
+                groupedByPoint[point].push(item);
+            });
+
+            // हर ड्यूटी प्वाइंट के लिए अलग सेक्शन जनरेट करें
+            let sectionIndex = 1;
+            for (const [pointName, staffList] of Object.entries(groupedByPoint)) {
+                let rowsHtml = '';
+                staffList.forEach((staff, idx) => {
+                    rowsHtml += `
+                        <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100">
+                            <td class="py-2.5 px-3 text-center">${idx + 1}</td>
+                            <td class="py-2.5 px-3 font-bold"><span>${staff.name || '---'}</span></td>
+                            <td class="py-2.5 px-3 font-semibold text-indigo-600 dark:text-indigo-400">${staff.rank || '---'}</td>
+                            <td class="py-2.5 px-3 text-slate-500">${staff.pno || '---'}</td>
+                            <td class="py-2.5 px-3 text-slate-500">${staff.mobile || '---'}</td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">${staff.shift || '---'}</td>
+                            <td class="py-2.5 px-3"><span class="font-semibold text-emerald-600">${staff.status || 'Active'}</span></td>
+                        </tr>
+                    `;
+                });
+
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'print-section glass p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3';
+                sectionDiv.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                        <h4 class="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide flex items-center gap-2">
+                            <i class="fa-solid fa-location-dot"></i> ड्यूटी प्वाइंट ${sectionIndex++}: ${pointName}
+                        </h4>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-bold">तैनात स्टाफ: ${staffList.length}</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse print-table">
+                            <thead>
+                                <tr class="text-slate-400 uppercase text-[10px] font-bold border-b border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50">
+                                    <th class="py-2 px-3 text-center w-10">क्रम</th>
+                                    <th class="py-2 px-3">कर्मचारी का नाम</th>
+                                    <th class="py-2 px-3">पद नाम</th>
+                                    <th class="py-2 px-3">PNO संख्या</th>
+                                    <th class="py-2 px-3">मोबाइल नंबर</th>
+                                    <th class="py-2 px-3">शिफ्ट समय</th>
+                                    <th class="py-2 px-3">स्थिति</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(sectionDiv);
+            }
+
+            document.getElementById('previewModal').classList.remove('hidden');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.add('hidden');
+        }
+
+        function printDutyReport() {
+            const now = new Date();
+            document.getElementById('printDate').innerText = now.toLocaleDateString('hi-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            document.getElementById('printTime').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            
+            // केवल प्रिंट कमांड चलाएं (प्रिव्यू मोडल को बंद न करें ताकि प्रिंट में प्रिव्यू रिपोर्ट ही छपे)
+            window.print();
+        }
+
+        function updateStats() {
+            const rows = document.querySelectorAll('#dutyTableBody tr[data-status]');
+            let activeCount = 0, leaveCount = 0, reserveCount = 0;
+
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (status === 'Active') activeCount++;
+                else if (status === 'Off Duty' || status === 'Leave') leaveCount++;
+                else if (status === 'Reserve') reserveCount++;
+            });
+
+            document.getElementById('statTotal').innerText = rows.length;
+            document.getElementById('statActive').innerText = activeCount;
+            document.getElementById('statLeave').innerText = leaveCount;
+            document.getElementById('statReserve').innerText = reserveCount;
+        }
+
+        function showDetails(name, rank, pno, dutyPoint, shift, status, phone) {
+            document.getElementById('modalName').innerText = name;
+            document.getElementById('modalRank').innerText = rank;
+            document.getElementById('modalPno').innerText = pno;
+            document.getElementById('modalDutyPoint').innerText = dutyPoint;
+            document.getElementById('modalShift').innerText = shift;
+            document.getElementById('modalPhone').innerText = phone || 'N/A';
+            document.getElementById('modalPhone').href = 'tel:' + (phone || '');
+            document.getElementById('modalCallBtn').href = 'tel:' + (phone || '');
+
+            const badge = document.getElementById('modalStatusBadge');
+            badge.innerText = status;
+            if(status === 'Active') badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
+            else if(status === 'Upcoming') badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20';
+            else if(status === 'Reserve') badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20';
+            else badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-500 border border-slate-500/20';
+
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        function closeDetailsModal() { document.getElementById('detailsModal').classList.add('hidden'); }
+        function openAssignModal() { document.getElementById('assignModal').classList.remove('hidden'); }
+        function closeAssignModal() { document.getElementById('assignModal').classList.add('hidden'); document.getElementById('newDutyForm').reset(); }
+
+        function openEditModal(btn) {
+            currentEditRow = btn.closest('tr');
+            document.getElementById('editName').value = currentEditRow.querySelector('.name-text').innerText;
+            document.getElementById('editRank').value = currentEditRow.querySelector('.rank-text').innerText;
+            document.getElementById('editPno').value = currentEditRow.querySelector('.pno-text').innerText;
+            document.getElementById('editMobile').value = currentEditRow.querySelector('.mobile-text').innerText;
+            document.getElementById('editPost').value = currentEditRow.querySelector('.post-text').innerText;
+            document.getElementById('editShift').value = currentEditRow.querySelector('.shift-text').innerText;
+            document.getElementById('editStatus').value = currentEditRow.getAttribute('data-status');
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); currentEditRow = null; }
+
+        function addDuty(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.innerText = 'सेव हो रहा है...';
+
+            const params = new URLSearchParams({
+                action: 'add',
+                name: document.getElementById('empName').value,
+                rank: document.getElementById('empRank').value,
+                pno: document.getElementById('empPno').value,
+                mobile: document.getElementById('empMobile').value,
+                post: document.getElementById('empPost').value,
+                shift: document.getElementById('empShift').value,
+                status: document.getElementById('empStatus').value
+            });
+
+            fetch(SCRIPT_URL, { method: 'POST', body: params })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerText = 'Save Duty';
+                closeAssignModal();
+                fetchDataFromSheet();
+            });
+        }
+
+        function updateDuty(e) {
+            e.preventDefault();
+            const btn = document.getElementById('updateBtn');
+            btn.disabled = true;
+            btn.innerText = 'अपडेट हो रहा है...';
+
+            const params = new URLSearchParams({
+                action: 'update',
+                name: document.getElementById('editName').value,
+                rank: document.getElementById('editRank').value,
+                pno: document.getElementById('editPno').value,
+                mobile: document.getElementById('editMobile').value,
+                post: document.getElementById('editPost').value,
+                shift: document.getElementById('editShift').value,
+                status: document.getElementById('editStatus').value
+            });
+
+            fetch(SCRIPT_URL, { method: 'POST', body: params })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerText = 'Update Changes';
+                closeEditModal();
+                fetchDataFromSheet();
+            });
+        }
+
+        function deleteRow(btn) {
+            if(!confirm('क्या आप वाकई इस रिकॉर्ड को मिटाना चाहते हैं?')) return;
+            const pno = btn.closest('tr').querySelector('.pno-text').innerText;
+
+            const params = new URLSearchParams({ action: 'delete', pno: pno });
+            fetch(SCRIPT_URL, { method: 'POST', body: params })
+            .then(res => res.json())
+            .then(data => {
+                fetchDataFromSheet();
+            });
+        }
+
+        function filterTable() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#dutyTableBody tr[data-status]');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
